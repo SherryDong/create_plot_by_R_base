@@ -1,0 +1,624 @@
+---
+title: "Create plot by R base"
+author: "Sherry Dong"
+date: "7/15/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Before Start 
+
+I really appreciate some fancy R packages for visualization and they are really great tools for people to use (e.g ggplot2 and htmlwidgets for R https://www.htmlwidgets.org/index.html). 
+But I just like to design and create plots by R base, especially for figures used in manuscript (most not interactive). 
+It is more flexible but sometimes complicated. 
+
+This tutorial is designed to share with my experience of how to play with R base. 
+
+The main idea of creating plots is to calculate the position of each item you want to display. 
+
+### Preparations
+
+Color code in R. 
+I like the color bar from RColorBrewer.
+
+```{r fig.width=6, fig.height=6}
+library(RColorBrewer)
+cc <- brewer.pal(8,'Set1') ## get color bar
+plot(x=1:8, y=rep(1,8), pch=16, cex=3, col=cc,ylim=c(0,5),xlim=c(0,9),xlab='',ylab='',xaxt='n',yaxt='n',bty='n',xaxs='i',yaxs='i')
+points(x=1:8, y=rep(2,8), pch=16, cex=10, col=grDevices::adjustcolor(cc,alpha=0.2),xpd=TRUE) ## color with transparent
+cc1 <- colorRampPalette(c(cc[1],'white',cc[2]))(100)
+points(x=seq(1,8,length.out=100), y=rep(3,100), pch=15, cex=3, col=cc1,xpd=TRUE) ## color with interpolation
+```
+
+
+```{r fig.width=4, fig.height=4}
+cc <- brewer.pal(8,'Set1') ## get color bar
+mat1 <- matrix(rnorm(0,1,n=200),nrow=10)
+cc <- colorRampPalette(c(cc[1],'white',cc[2]))(100) ## color bar
+bb <- seq(-2,2,length.out=101) ## matched value breaks, length must be one longer than the color bar
+image(mat1,col=cc,breaks=bb,xaxt='n',yaxt='n',bty='n') ## this is the start to create some plots like heatmap
+```
+
+### Demo1: create DNA double helix
+
+Prepare the color code used here. 
+
+```{r}
+col_DNA <- brewer.pal(8,'Set1')[2]
+# A-green, T-red, C-yellow, G-blue 
+col_ATCG <- c(brewer.pal(8,'Accent')[1],brewer.pal(11,'Set3')[4],brewer.pal(11,'Set3')[2],brewer.pal(11,'Paired')[1])
+```
+
+First calculate the position for X and Y if we plan to draw four units of DNA.
+
+```{r}
+DNA_length <- 4 ## the code only applies when DNA_length%%2==0, if DNA_length%%2==1, need to modify
+x <- seq(-DNA_length*pi/2,DNA_length*pi/2,length.out=1000) ##
+y1 <- cos(x) ## backbone up
+y2 <- cos(x+pi) ## backbone down
+# get the position of nucleotides
+xx <- seq(DNA_length*pi/2,-DNA_length*pi/2,length.out = DNA_length*5+1); 
+xx <- xx+(xx[2]-xx[1])/2 
+# remove the first and the lines in the boundary region
+xx <- setdiff(xx,c(xx[c(1:DNA_length)*5-2],min(xx)))
+```
+
+Draw the backbones first, 
+consider that backbones need to display at the upper level of the figure, so we only draw one here in order to get the figure size.
+Here, set `xlab`,`ylab`,`xaxt`,`yaxt`,`bty` to remove axis and background lines.
+`segments` is used to draw lines with calculated start and end position. 
+`lines` is used to draw lines with continous position.
+
+```{r fig.width=6, fig.height=3}
+plot(y1~x,pch=16,type='l',xlab='',ylab='',xaxt='n',yaxt='n',main='',bty='n',col='white')
+for(i in 1:length(xx)){
+    ybottom <- cos(xx[i]) # ybottom position
+    ytop    <- cos(xx[i]+pi) # yup position
+    rr <- sample(1:4,1) ## ATCG, random select one pair
+    if(rr==1){
+      segments(y0=ybottom,y1=0,x0=xx[i],x1=xx[i],col=col_ATCG[1],lwd=4) ## A-T
+      segments(y0=0,y1=ytop,x0=xx[i],x1=xx[i],col=col_ATCG[2],lwd=4)
+    }
+    if(rr==2){
+      segments(y0=ybottom,y1=0,x0=xx[i],x1=xx[i],col=col_ATCG[2],lwd=4) ## T-A
+      segments(y0=0,y1=ytop,x0=xx[i],x1=xx[i],col=col_ATCG[1],lwd=4)
+    }
+    if(rr==3){
+      segments(y0=ybottom,y1=0,x0=xx[i],x1=xx[i],col=col_ATCG[3],lwd=4) ## C-G
+      segments(y0=0,y1=ytop,x0=xx[i],x1=xx[i],col=col_ATCG[4],lwd=4)
+    }
+    if(rr==4){
+      segments(y0=ybottom,y1=0,x0=xx[i],x1=xx[i],col=col_ATCG[4],lwd=4) ## G-C
+      segments(y0=0,y1=ytop,x0=xx[i],x1=xx[i],col=col_ATCG[3],lwd=4)
+    }
+  }
+lines(y1~x,pch=16,lwd=8,col=col_DNA)
+lines(y2~x,pch=16,lwd=8,col=col_DNA)
+```
+
+Task1: modifiy the script to draw for `DNA_length` with odd number (e.g `DNA_length=5`). 
+
+### Demo2: create network plot
+
+Lots of tools have been created to draw fancy network figures, such as cytoscape, visNetwork, networkD3. 
+Those tools are very useful for server usage or exquisite visualization. 
+For R, igraph provides lot of layout functions for network display and the output of those functions are the positions of nodes in the figure.
+A similar tutorial could be found [here](https://kateto.net/wp-content/uploads/2016/06/Polnet%202016%20R%20Network%20Visualization%20Workshop.pdf). 
+
+Firstly, random generate a network. 
+
+```{r}
+source_list <- paste0('Driver',1:5)
+target_list <- paste0('Target',1:600)
+random_net  <- do.call(rbind,lapply(source_list,function(x){
+  r1 <- 0.03*sample(1:10,1) ##target Vs. not target
+  w1 <- sample(c(0,1),length(target_list),prob=c(1-r1,r1),replace=TRUE)
+  x1 <- cbind(x,target_list[which(w1==1)])
+  r1 <- 0.5 ##negative target Vs. positive target
+  t1 <- sample(c(-1,1),nrow(x1),prob=c(1-r1,r1),replace=TRUE)
+  x2 <- cbind(x1,t1)
+}))
+random_net <- as.data.frame(random_net,stringsAsFactors=FALSE)
+names(random_net) <- c('Driver','Target','sign')
+```
+
+Secondly, display the network by `plot.igraph()`. I'd like to save the position for each point into a variable first and then put it into `plot.igraph`.
+
+```{r fig.width=6, fig.height=6}
+# color code
+library(RColorBrewer)
+pos_col <- brewer.pal(12,'Paired')[8];
+neg_col <- brewer.pal(12,'Paired')[4];
+#
+library(igraph)
+gr <- graph.data.frame(random_net)
+par(bg = 'black');par(mar=c(1,1,1,1))
+
+## try the following layout
+layout_pos <- layout_nicely(gr) #
+layout_pos <- layout_with_dh(gr) #
+layout_pos <- layout_with_graphopt(gr) #
+layout_pos <- layout_with_kk(gr) #
+layout_pos <- layout_with_lgl(gr) #
+## the following layout seems not fitable for this network
+#layout_pos <- layout_as_star(gr)
+#layout_pos <- layout_as_tree(gr)
+#layout_pos <- layout_in_circle(gr)
+#layout_pos <- layout_on_grid(gr)
+#layout_pos <- layout_on_sphere(gr)
+#layout_pos <- layout_with_fr(gr)
+#layout_pos <- layout_with_gem(gr)
+#layout_pos <- layout_with_mds(gr)
+plot(gr,
+     edge.arrow.mode=2,
+     edge.arrow.size=0.2,
+     edge.width=0.4,
+     edge.color=ifelse(E(gr)$sign==1,pos_col,neg_col),
+     vertex.label='',
+     vertex.frame.color="white",
+     vertex.size=ifelse(V(gr)$name %in% source_list,6,4),
+     vertex.color=ifelse(V(gr)$name %in% source_list,'purple','grey'),
+     layout=layout_pos)
+```
+
+
+For a driver, try to display its subnetwork by igraph.
+
+```{r fig.width=6, fig.height=6}
+gr <- subgraph(gr,v=ego(gr,nodes='Driver1')[[1]])
+layout_pos <- layout_nicely(gr)
+plot(gr,
+     edge.arrow.mode=2,
+     edge.arrow.size=0.2,
+     edge.width=0.4,
+     edge.color=ifelse(E(gr)$sign==1,pos_col,neg_col),
+     vertex.label=V(gr)$name,vertex.label.cex=0.5,
+     vertex.frame.color="white",
+     vertex.size=ifelse(V(gr)$name %in% source_list,6,4),
+     vertex.color=ifelse(V(gr)$name %in% source_list,'purple','grey'),
+     layout=layout_pos)
+```
+
+Well, I don't like it because of the label display, so I decide to create the plot without igraph (sometimes it is not necessary to do so).
+The complicated function could be found in my NetBID2 R package, `draw.targetNet()`. Here, I only use some of the code for sharing the experience. 
+
+Firstly, borrow a function `t2xy()` from `pie()` to get the position of each point in a circle.
+
+```{r}
+t2xy <- function(tt,radius=1) {
+  t2p <- pi*2 * tt
+  list(x = radius * cos(t2p), y = radius * sin(t2p))
+}
+library(plotrix) ## for draw.ellipse()
+# get the network from graph object
+net1 <- igraph::as_data_frame(gr,what='edges')
+target_list <- sort(unique(net1$to))
+target_sign <- net1$sign; 
+names(target_sign) <- net1$to;
+target_sign <- target_sign[target_list]
+tt <- seq(0,1,length.out = length(target_list)+1)[-1] ## 0,1 will be the same point, so the length should add 1 and remove the first one
+net1_pos <- t2xy(tt,radius=0.7)
+```
+
+Then, if the position of the target is calculated, creating a plot is not difficult. 
+Add edges with start and end position, add nodes with the end position.
+
+```{r fig.width=6, fig.height=6}
+# plot an empty figure
+par(mar=c(2,2,2,2))
+plot(1,xlim=c(-1,1),ylim=c(-1,1),bty='n',col='white',xlab="",ylab="",xaxt='n',yaxt='n')
+# add edges
+graphics::arrows(x0=0,y0=0,x1=net1_pos$x,y1=net1_pos$y,col=ifelse(target_sign==1,pos_col,neg_col),lwd=0.8,angle=10,length=0.08,xpd=TRUE);
+# add nodes
+for(i in 1:length(target_list)){
+  text(net1_pos$x[i],net1_pos$y[i],target_list[i],cex=0.3+10/length(target_list),
+     srt=180*atan(net1_pos$y[i]/net1_pos$x[i])/pi,adj=ifelse(net1_pos$x[i]>0,0,1),
+     xpd=TRUE)
+}
+draw.ellipse(0,0,a=0.1,b=0.1,col='light grey',border=NA)
+text(0,0,'Driver1',adj=0.5,xpd=TRUE,cex=1)
+```
+
+The position and the direction of the text, adjusted by `srt` and `adj`, `srt` is the string rotation in degrees and is calculated by:
+
+```{r}
+i <- 1
+use_srt <- 180*atan(net1_pos$y[i]/net1_pos$x[i])/pi
+```
+
+In R, the conversion between degree and radians is:
+
+- radians = degree*pi/180
+- degree = 180*radians/pi
+
+The above script is just a demo to show how to think to create such a plot, sometimes need to adjust it to be more beautiful. 
+
+### Demo3: adjust a figure
+
+In Rstudio, there is a cheat sheet explaining the basic parameters used to adjust a graph: [How big is your graph?](https://github.com/rstudio/cheatsheets/raw/master/how-big-is-your-graph.pdf)
+
+The following parameters need to be very familiar to create a plot, the following is a demo try to include those parameters.
+
+```{r fig.width=6, fig.height=6}
+par(mar=c(6,4,3,4))
+# par(XXX=XXX) is used to set the parameters in par()
+x <- rnorm(mean=0,sd=0.5,n=1000) ## random generate a numeric vector
+n_bar <- 11
+x1 <- cut(x,breaks=c(-Inf,seq(-1,1,length.out=n_bar),Inf))
+x2 <- table(x1)/length(x1)
+cc <- brewer.pal(8,'Set1')
+cc <- colorRampPalette(c('light grey',cc[1]))(length(x2)) ## color bar
+a <- barplot(x2,bty='n',xlab="",ylab="",xaxt='n',yaxt='n',xaxs='i',yaxs='i',border=NA,col=cc,ylim=c(0,1))
+# barplot will return the position for each bar
+# xlim, ylim
+# bty
+# xlab, ylab
+# xaxt, yaxt
+# xaxs, yaxs; default is "r", and will extend 4% at each end. try setting and print par()$usr
+# border
+pp <- par()$usr
+# all values in par() could be extracted and used ! par()$usr is the position for the left, right ,bottom and top of the figure
+text(a,pp[3],levels(x1),xpd=TRUE,adj=1,cex=0.8,srt=90)
+# srt
+# xpd
+# adj
+axis(side=2,at=seq(0,1,length.out = 11),labels=seq(0,1,length.out = 11)*length(x1),las=2)
+axis(side=4,at=seq(0,1,length.out = 11),labels=paste0(seq(0,100,length.out = 11),'%'),las=2)
+mtext(side=2,line=3,'Frequency',xpd=TRUE,font=2)
+mtext(side=4,line=3,'Percentage',xpd=TRUE,font=2)
+# side
+# las
+# font
+x3 <- cumsum(x2)
+points(x=a,y=x2,pch=16,xpd=TRUE,cex=1,col='blue')
+points(x=a,y=x3,pch=16,xpd=TRUE,cex=1,col='green')
+# pch
+# xpd
+# cex
+lines(x2~a,lwd=2,lty=1,col='blue')
+lines(x3~a,lwd=2,lty=1,col='green')
+# lwd
+# lty
+# col
+legend('topleft',col=c('blue','green'),lty=1,legend=c('PDF','CDF'),bty='n',border=NA,pch=16)
+# border, lty
+polygon(x=c(a,max(a),0),y=c(x3,0,0),col=grDevices::adjustcolor('green',alpha=0.1),border=NA)
+polygon(x=c(a,max(a),0),y=c(x2,0,0),col=grDevices::adjustcolor('blue',alpha=0.1),border=NA)
+# for polygon, just need to get the position for the margin lines
+## finally have a look at the parameters in par(), this object saves the current settings, which is very useful for position calculation.
+print(str(par()))
+```
+
+
+Next, there are some functions and parameters not common used by also very important, especially to calculate size for the plot.
+Let's create a plot with 6 inch width and 8 inch height.
+
+In R, some units conversions:
+
+1 inch = 72 bp (could set by ps)
+
+1 inch = 2.54 cm
+
+lwd=1 --> 1/96 inch
+
+cex=1 --> For pch in 0:25 the default size is about 75% of the character height (`par()$cin[2]`, `cin` is read-only arguments).
+
+ps: font point size (roughly 1bp=1/72 inch); text size=ps*cex. Default `par()$ps=12`.
+
+Following are some functions to convert between position and inch. 
+Remember that x and y may have different ratio.
+
+```{r fig.width=6, fig.height=8}
+par.pos2inch <- function(){
+  user.range <- par("usr")[c(2,4)] - par("usr")[c(1,3)]
+  region.pin <- par("pin")
+  return(region.pin/user.range)
+}
+par.inch2pos <- function(){return(1/par.pos2inch())}
+par.char2inch <- function(){return(par()$cin)} ## letter W
+par.lineHeight2inch <- function(){
+  lheight <- par()$lheight
+  y1 <- par.char2inch()[2]*lheight ## line height in inches
+  y1
+}
+par.char2pos <- function(){par()$cxy}
+## set margin to inches
+bottom_margin <- 1; right_margin <- 0.4
+top_margin <- 1; left_margin <- 0.5;
+par(mai=c(bottom_margin,left_margin,top_margin,right_margin)) ## bottom 1 inch margin, right 0.5 inch margin
+# right_margin*par.inch2pos()[1] is the x-axis position for the margin
+# bottom_margin*par.inch2pos()[2] is the y-axis position for the margin
+
+# plot
+plot(1,xlim=c(0,1),ylim=c(1,20),xaxs='i',yaxs='i',xlab='',ylab='',cex=1,xpd=TRUE,col='white') ## create an empty plot
+# get to know the relation between xy position and inch
+points(x=1+right_margin*par.inch2pos()[1],y=1-bottom_margin*par.inch2pos()[2],pch=16,cex=4,xpd=TRUE,col='red') ## margin point, set xpd=TRUE otherwise will not displayed
+abline(v=1+right_margin*par.inch2pos()[1],lwd=2,col='red',xpd=TRUE) ## margin line, set xpd=TRUE otherwise will not displayed
+abline(h=1-bottom_margin*par.inch2pos()[2],lwd=2,col='red',xpd=TRUE) ## margin line, set xpd=TRUE otherwise will not displayed
+draw.ellipse(x=1,y=1,a=right_margin*par.inch2pos()[1],b=bottom_margin*par.inch2pos()[2],xpd=TRUE)
+
+# get to know the relation between character width, height and position
+test_char <- 'ABCD'; test_cex = 2;
+char_width  <- strwidth(test_char,units='user',cex=test_cex) ## units to 'user' means the value in x axis
+char_height <- strheight(test_char,units='user',cex=test_cex) ## 
+text(0.5,10,test_char,cex=test_cex)
+rect(xleft = 0.5-char_width/2,xright=0.5+char_width/2,ybottom=10-char_height/2,ytop=10+char_height/2,
+     col=grDevices::adjustcolor('grey',alpha=0.5),border=NA) ## draw background rectangle for the text
+
+# get to know the relation between cex, xy-position and inch
+p1 <- par.char2inch()[2]*0.75 ## inch length for cex=1 with pch=16, is 75% of the character height
+points(x=1,y=1,pch=16,xpd=TRUE,cex=right_margin*2*2/p1,col=grDevices::adjustcolor('grey',alpha=0.5)) ## to fullfill right_margin*2, with two sides
+
+# get to know the relation between character width, height, lwd and inch
+test_char <- 'WM'; test_cex = 2;
+char_width  <- strwidth(test_char,units='user',cex=test_cex) ## units to 'user' means the value in x axis
+char_height <- strheight(test_char,units='user',cex=test_cex) ## 
+text(0.2,15,test_char,cex=test_cex)
+abline(h=15,col=grDevices::adjustcolor('grey',alpha=0.5),lwd=char_height*par.pos2inch()[2]/(1/96)) ## 1 lwd --> 1/96 inch
+abline(v=0.2,col=grDevices::adjustcolor('grey',alpha=0.5),lwd=char_width*par.pos2inch()[1]/(1/96))
+
+# get to know the relation between strheight, strwidth, and par()$cin
+print(par()$lheight) ## default is one line height, defined by par()$cin[2], 0.2 inches
+strheight('W\n',units='inches')-strheight('W',units='inches') ## equals to par()$cin[2]
+strheight(sprintf('%s\n',LETTERS),units='inches')-strheight(sprintf('%s',LETTERS),units='inches')## all equals to par()$cin[2]
+# try to change lheight
+par(lheight=2) ## if set to 2, the line height will be lheight*par()$cin[2]=0.4 
+strheight('W\n',units='inches')-strheight('W',units='inches') ## equals to par()$cin[2]
+strheight(sprintf('%s\n',LETTERS),units='inches')-strheight(sprintf('%s',LETTERS),units='inches')## all equals to par()$cin[2]
+
+# but strwidth differs a lot, try:
+strwidth(LETTERS,units='inches')
+strwidth('AB',units='inches')-strwidth('A',units='inches') # equals to strwidth('B',units='inches')
+
+```
+
+Task2: modifiy the script in Demo2 and let the point size for the "Driver1" could match the text size of "Driver1".
+
+### Demo4: create a plot with multiple subgraphs
+
+Then, we could try to create plots with subgraphs. Let's try to create heatmap (well, no need to do so ....).
+
+Prepare the data.
+
+```{r}
+cc <- brewer.pal(8,'Set1') ## get color bar
+mat1 <- matrix(c(rnorm(1,0.5,n=80),rnorm(-1,0.5,n=120)),nrow=20,byrow=TRUE) ## 20 genes in 10 samples
+mat2 <- matrix(c(rnorm(-1,0.5,n=150),rnorm(1,0.5,n=150)),nrow=20,byrow=TRUE) ## 20 genes in 15 samples
+colnames(mat1) <- sprintf('Sample%s',1:10)
+colnames(mat2) <- sprintf('Sample%s',10+1:15)
+rownames(mat1) <- rownames(mat2) <- sprintf('Gene%s',1:20)
+mat_all <- cbind(mat1,mat2)
+cc <- colorRampPalette(c(cc[1],'white',cc[2]))(100) ## color bar
+bb <- c(min(mat_all)-1,seq(-2,2,length.out=99),1+max(mat_all)) ## matched value breaks, length must be one longer than the color bar
+# reorder the matrix
+h1 <- hclust(dist(mat_all))
+h2 <- hclust(dist(t(mat_all)))
+o1 <- h1$order
+o2 <- h2$order
+mat_all <- mat_all[o1,o2]
+```
+
+I like to use `graphics::layout` to design the figure. Also for simple usage, could directly use `par(mfrow=XX,mfcol=XX)`.
+
+```{r}
+m1 <- matrix(c(0,2,2,2,0,3,1,1,1,5,3,1,1,1,5,3,1,1,1,5,0,4,4,4,0),nrow=5,byrow=TRUE) ## tip: sometimes could design it in excel first and then read in into R
+## then, draw 1,2,3,4,5 sub-figures by order. 0 could be used to represent no figure in the area
+n1 <- layout(m1)
+layout.show(n1)
+```
+
+Then,draw as follows,
+
+```{r fig.width=8, fig.height=8}
+layout(m1)
+# 1. image plot
+par(mar=c(0,0,0,0))
+draw_mat <- t(mat_all)
+image(draw_mat,col=cc,breaks=bb,xlab='',ylab='',xaxt='n',yaxt='n',bty='n',xaxs='i',yaxs='i')
+pp <- par()$usr ## get to know the xy position of the figure
+x_line_pos <- seq(pp[1],pp[2],length.out=nrow(draw_mat)+1) ## x position for vertical line
+y_line_pos <- seq(pp[3],pp[4],length.out=ncol(draw_mat)+1) ## y position for each horizon line
+x_mid_pos  <- x_line_pos[1:(length(x_line_pos)-1)]/2+x_line_pos[2:length(x_line_pos)]/2 ## x position for column mid position
+y_mid_pos  <- y_line_pos[1:(length(y_line_pos)-1)]/2+y_line_pos[2:length(y_line_pos)]/2 ## y position for row mid position
+# try to draw line to seperate groups
+g1 <- cutree(h1,k=2) ## try to change k values
+g2 <- cutree(h2,k=2)
+w1 <- cumsum(table(g1[rownames(mat_all)]))[unique(g1[rownames(mat_all)])] ## get to know the seperation number, must be in the original order
+w2 <- cumsum(table(g2[colnames(mat_all)]))[unique(g2[colnames(mat_all)])]
+abline(v=x_line_pos[c(1,w2+1)],xpd=TRUE) ## draw the line
+abline(h=y_line_pos[c(1,w1+1)],xpd=TRUE)
+
+# 2. dendrogram at the top
+par(mar=c(0,0,0,0))
+hcd <- as.dendrogram(h2)
+plot(hcd,type = "rectangle", ylab = "",xlim=c(0.5,length(h2$order)+0.5),xaxs='i',yaxs='i',yaxt='n',
+     ylim=c(-8,0.5+max(h2$height))) 
+## X: 0.5 adjustment for start and end position; Y: real range should be c(0,max(h2$height)), leave some place to draw rectangle + sample label (if leaflab!='n')
+## for the dendrogram, lots of modifications could be used, try change the type
+
+# 3. at the left to add gene name
+plot(1,col='white',xlab='',ylab='',xaxt='n',yaxt='n',bty='n',xaxs='i',yaxs='i',ylim=c(0,nrow(mat_all)),xlim=c(0,1))
+text(x=0.9,y=c(1:nrow(mat_all))-0.5,rownames(mat_all),adj=1)
+# add tick
+segments(x0=0.95,x1=1,y0=c(1:nrow(mat_all))-0.5,y1=c(1:nrow(mat_all))-0.5,col='grey')
+
+# 4. at the bottom to add bar to indicate sample group
+cc_pair <- brewer.pal(11,'Set3')
+plot(1,col='white',xlab='',ylab='',xaxt='n',yaxt='n',bty='n',xaxs='i',yaxs='i',xlim=c(0,ncol(mat_all)),ylim=c(0,1))
+rect(xleft=c(0,w2[1:(length(w2)-1)]),xright=w2,ybottom=0.7,ytop=0.9,col=cc_pair[1:length(w2)],border=NA)
+# add group name
+text(c(0,w2[1:(length(w2)-1)])/2+w2/2,y=0.8,sprintf("Group:%s",names(w2)),adj=0.5)
+
+# 5. at the right to add color bar for values in the image
+plot(1,col='white',xlab='',ylab='',xaxt='n',yaxt='n',bty='n',xaxs='i',yaxs='i',xlim=c(0,1),ylim=c(0,1))
+yy_pos <- seq(0.3,0.7,length.out=10)
+ddy <- yy_pos[2]-yy_pos[1]
+bb_u   <- round(seq(1,length(bb),length.out=11))
+cc_u   <- cc[bb_u[2:length(bb_u)]-1]
+rect(xleft=rep(0.3,11),xright=rep(0.5,11),
+     ybottom=yy_pos, 
+     ytop=yy_pos+ddy,
+     col=cc_u,xpd=TRUE,border=NA)
+text(0.65,c(yy_pos,max(yy_pos)+ddy),round(bb[bb_u],1),adj=0.5)
+text(0.4,0.78,'Value',cex=1.2)
+# add tick
+segments(x0=0.5,x1=0.53,y0=c(yy_pos,max(yy_pos)+ddy),y1=c(yy_pos,max(yy_pos)+ddy),col='grey')
+
+```
+
+
+Tips: when trying to draw en empty graph, I like to use `plot()` rather than `plot.new()`. 
+In plot, I could set `xaxs='i',yaxs='i'` and set `xlim`, `ylim` to proper values that could make position easy to calculate between different sub-figures. 
+
+### Demo5: create sankey diagrams and circos 
+
+There are already lots of packages to create Sankey diagrams and circos.
+Well, here just to show how it works. 
+
+For the Sankey diagrams, need to write a function to calculate positions for the curve with a start and an end point.
+It is very simple, just the modificiation of sin curve.
+
+```{r}
+curve_sankey <- function (x0, x1, y0, y1,nsteps = 100){
+    xx <- seq(-pi/2, pi/2, length.out = nsteps)
+    yy <- y0 + (y1 - y0) * (sin(xx) + 1)/2
+    xx <- seq(x0, x1, length.out = nsteps)
+    list(x=xx,y=yy)
+}
+```
+
+Firstly, get to know how to draw those curves.
+
+```{r fig.width=6, fig.height=6}
+layout(1)
+par(mar=c(2,2,2,2))
+cc1 <- brewer.pal(11,'Set3')
+plot(1,col='white',xlab='',ylab='',xaxt='n',yaxt='n',bty='n',xaxs='i',yaxs='i',xlim=c(0,1),ylim=c(0,1))
+pos1 <- seq(0,1,length.out=10)
+pos2 <- seq(0,1,length.out=5)
+# random generate link
+rand_link <- lapply(pos1,function(x)sample(1:length(pos2),sample(1:5)))
+for(i in 1:length(pos1)){
+  for(j in 1:length(rand_link[[i]])){
+      curve_pos <- curve_sankey(x0=0.2,y0=pos1[i],x1=0.8,y1=pos2[rand_link[[i]][j]])
+      lines(curve_pos,col=adjustcolor(cc1[i],alpha=0.5),lwd=5)
+  }
+}
+points(x=rep(0.2,length.out=length(pos1)),y=pos1,pch=16,col=cc1,xpd=TRUE)
+points(x=rep(0.8,length.out=length(pos2)),y=pos2,pch=16,col='black',xpd=TRUE)
+
+```
+
+Secondly, try to draw the sandkey diagrams.
+
+```{r fig.width=6, fig.height=6}
+layout(1)
+par(mar=c(2,2,2,2))
+cc1 <- brewer.pal(8,'Dark2')
+plot(1,col='white',xlab='',ylab='',xaxt='n',yaxt='n',bty='n',xaxs='i',yaxs='i',xlim=c(0,1),ylim=c(0,1))
+pos1_bottom <- c(0,0.4,0.7)
+pos1_up <- c(0.3,0.6,0.9)
+pos2_bottom <- c(0.2,0.6)
+pos2_up <- c(0.5,0.7)
+rect(xleft=0.1,xright=0.2,ybottom=pos1_bottom,ytop=pos1_up,pch=16,col=cc1,border=NA)
+rect(xleft=0.8,xright=0.9,ybottom=pos2_bottom,ytop=pos2_up,pch=16,col='grey',border=NA)
+for(i in 1:length(pos1_up)){
+  for(j in 1:length(pos2_up)){
+      curve_pos1 <- curve_sankey(x0=0.2,y0=pos1_up[i],x1=0.8,y1=pos2_up[j])
+      curve_pos2 <- curve_sankey(x0=0.2,y0=pos1_bottom[i],x1=0.8,y1=pos2_bottom[j])
+      polygon(x=c(curve_pos1$x,rev(curve_pos2$x)),y=c(curve_pos1$y,rev(curve_pos2$y)),col=adjustcolor(cc1[i],alpha=0.5),border=NA)
+  }
+}
+```
+
+
+Similarly, for the circos, also need to write a function to calculate positions for the Bezire Curve with a start and an end point.
+It is very simple, just the modificiation of sin curve.
+
+```{r}
+curve_circos <- function (x0, x1, y0, y1,nsteps = 100){
+    tt <- seq(0, 1, 1/nsteps)
+    xx <- (1 - tt)^2 * x0 + tt^2 * x1
+    yy <- (1 - tt)^2 * y0 + tt^2 * y1
+    list(x=xx,y=yy)
+}
+```
+
+
+Firstly, get to know how to draw those curves.
+
+```{r fig.width=6, fig.height=6}
+layout(1)
+par(mar=c(2,2,2,2))
+cc1 <- brewer.pal(11,'Set3')
+plot(1,col='white',xlab='',ylab='',xaxt='n',yaxt='n',bty='n',xaxs='i',yaxs='i',xlim=c(-1,1),ylim=c(-1,1))
+draw.ellipse(0,0,a=0.8,b=0.8,border='grey')
+pos1 <- t2xy(seq(0,0.5,length.out=11),radius = 0.8)
+pos2 <- t2xy(seq(0.6,1,length.out=5),radius = 0.8)
+# random generate link
+rand_link <- lapply(pos1$x,function(x)sample(1:length(pos2$x),sample(1:4)))
+for(i in 1:length(pos1$x)){
+  for(j in 1:length(rand_link[[i]])){
+      curve_pos <- curve_circos(x0=pos1$x[i],y0=pos1$y[i],x1=pos2$x[rand_link[[i]][j]],y1=pos2$y[rand_link[[i]][j]])
+      lines(curve_pos,col=adjustcolor(cc1[i],alpha=0.5),lwd=5)
+  }
+}
+points(x=pos1$x,y=pos1$y,pch=16,col=cc1,xpd=TRUE)
+points(x=pos2$x,y=pos2$y,pch=16,col='black',xpd=TRUE)
+
+```
+
+Secondly, try to draw the circos.
+
+```{r fig.width=6, fig.height=6}
+layout(1)
+par(mar=c(2,2,2,2))
+cc1 <- brewer.pal(8,'Dark2')
+plot(1,col='white',xlab='',ylab='',xaxt='n',yaxt='n',bty='n',xaxs='i',yaxs='i',xlim=c(-1,1),ylim=c(-1,1))
+draw.ellipse(0,0,a=0.75,b=0.75,border='grey')
+draw.ellipse(0,0,a=0.85,b=0.85,border='grey')
+pos1_bottom <- c(0,0.2,0.4)
+pos1_up <- c(0.1,0.25,0.45)
+pos2_bottom <- c(0.55,0.7)
+pos2_up <- c(0.6,0.75)
+for(i in 1:length(pos1_bottom)){
+ pos1_in <- t2xy(seq(pos1_bottom[i],pos1_up[i],length.out=100),radius = 0.75);
+ pos1_out <- t2xy(seq(pos1_bottom[i],pos1_up[i],length.out=100),radius = 0.85)
+ polygon(x=c(pos1_in$x,rev(pos1_out$x)),y=c(pos1_in$y,rev(pos1_out$y)),
+         col=adjustcolor(cc1[i],alpha=0.5),border=NA)
+}
+for(i in 1:length(pos2_bottom)){
+ pos2_in <- t2xy(seq(pos2_bottom[i],pos2_up[i],length.out=100),radius = 0.75);
+ pos2_out <- t2xy(seq(pos2_bottom[i],pos2_up[i],length.out=100),radius = 0.85)
+ polygon(x=c(pos2_in$x,rev(pos2_out$x)),y=c(pos2_in$y,rev(pos2_out$y)),
+         col=adjustcolor('grey',alpha=0.5),border=NA)
+}
+for(i in 1:length(pos1_up)){
+  for(j in 1:length(pos2_up)){
+      curve_start <- t2xy(pos1_up[i],radius=0.75)
+      curve_end <- t2xy(pos2_bottom[j],radius=0.75)
+      curve_pos1 <- curve_circos(x0=curve_start$x,y0=curve_start$y,x1=curve_end$x,y1=curve_end$y)
+      curve_start <- t2xy(pos1_bottom[i],radius=0.75)
+      curve_end <- t2xy(pos2_up[j],radius=0.75)
+      curve_pos2 <- curve_circos(x0=curve_start$x,y0=curve_start$y,x1=curve_end$x,y1=curve_end$y)
+      pos1_in <- t2xy(seq(pos1_bottom[i],pos1_up[i],length.out=100),radius = 0.75);
+      pos2_in <- t2xy(seq(pos2_bottom[j],pos2_up[j],length.out=100),radius = 0.75);
+      polygon(x=c(pos1_in$x,curve_pos1$x,pos2_in$x,rev(curve_pos2$x)),
+              y=c(pos1_in$y,curve_pos1$y,pos2_in$y,rev(curve_pos2$y)),
+              col=adjustcolor(cc1[i],alpha=0.2),border=NA)
+  }
+}
+
+```
+
+
+Well, seems not very difficult, right ? 
+
+Remember that the key point is to calculate position ! 
+
+Good Luck & Have Fun !
+
+
