@@ -5,7 +5,7 @@ Share with codes that create interesting plot by using R-base.
 
 ## Before Start
 
-I really appreciate some fancy R packages for visualization and they are really great tools for people to use (e.g ggplot2 and htmlwidgets for R https://www.htmlwidgets.org/index.html). But I just like to design and create plots by R base, especially for figures used in manuscript (most not interactive). It is more flexible but sometimes complicated.
+I really appreciate some fancy R packages for visualization and they are really great tools for people to use (e.g ggplot2 and htmlwidgets for R). But I just like to design and create plots by R base, especially for figures used in manuscript (most not interactive). It is more flexible but sometimes complicated.
 
 This tutorial is designed to share with my experience of how to play with R base.
 
