@@ -2,6 +2,7 @@
 
 Share with codes that create interesting plot by using R-base.
 
+Download the html file or Rmd file and follow the instructions.
 
 ## Before Start
 
