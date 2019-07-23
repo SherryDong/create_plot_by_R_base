@@ -391,7 +391,7 @@ colnames(mat1) <- sprintf('Sample%s',1:10)
 colnames(mat2) <- sprintf('Sample%s',10+1:15)
 rownames(mat1) <- rownames(mat2) <- sprintf('Gene%s',1:20)
 mat_all <- cbind(mat1,mat2)
-cc <- colorRampPalette(c(cc[1],'white',cc[2]))(100) ## color bar
+cc <- colorRampPalette(c(cc[2],'white',cc[1]))(100) ## color bar
 bb <- c(min(mat_all)-1,seq(-2,2,length.out=99),1+max(mat_all)) ## matched value breaks, length must be one longer than the color bar
 # reorder the matrix
 h1 <- hclust(dist(mat_all))
