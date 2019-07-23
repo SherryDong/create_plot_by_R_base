@@ -426,8 +426,8 @@ y_mid_pos  <- y_line_pos[1:(length(y_line_pos)-1)]/2+y_line_pos[2:length(y_line_
 # try to draw line to seperate groups
 g1 <- cutree(h1,k=2) ## try to change k values
 g2 <- cutree(h2,k=2)
-w1 <- cumsum(table(g1[rownames(mat_all)]))[unique(g1[rownames(mat_all)])] ## get to know the seperation number, must be in the original order
-w2 <- cumsum(table(g2[colnames(mat_all)]))[unique(g2[colnames(mat_all)])]
+w1 <- cumsum(table(g1[rownames(mat_all)])[unique(g1[rownames(mat_all)])]) ## get to know the seperation number, must be in the original order
+w2 <- cumsum(table(g2[colnames(mat_all)])[unique(g2[colnames(mat_all)])])
 abline(v=x_line_pos[c(1,w2+1)],xpd=TRUE) ## draw the line
 abline(h=y_line_pos[c(1,w1+1)],xpd=TRUE)
 
