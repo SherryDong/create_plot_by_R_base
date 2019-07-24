@@ -37,7 +37,7 @@ points(x=seq(1,8,length.out=100), y=rep(3,100), pch=15, cex=3, col=cc1,xpd=TRUE)
 ```{r fig.width=4, fig.height=4}
 cc <- brewer.pal(8,'Set1') ## get color bar
 mat1 <- matrix(rnorm(0,1,n=200),nrow=10)
-cc <- colorRampPalette(c(cc[1],'white',cc[2]))(100) ## color bar
+cc <- colorRampPalette(c(cc[2],'white',cc[1]))(100) ## color bar, blue->red
 bb <- seq(-2,2,length.out=101) ## matched value breaks, length must be one longer than the color bar
 image(mat1,col=cc,breaks=bb,xaxt='n',yaxt='n',bty='n') ## this is the start to create some plots like heatmap
 ```
