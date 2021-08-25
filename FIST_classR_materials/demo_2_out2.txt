@@ -1,0 +1,5 @@
+H1	H2	H3
+S1	blue	blue	red
+S2	red	yellow	green
+S3	yellow	red	red
+S4	red	green	blue

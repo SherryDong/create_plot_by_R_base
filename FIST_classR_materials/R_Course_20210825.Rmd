@@ -1,0 +1,791 @@
+---
+title: "R_Course_20210825"
+author: "XinranDong"
+date: "2021年8月25日"
+output: html_document
+---
+
+```{r setup, include=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 课程内容概要
+
+[R语言的基本概念](#title1)
+
+[R语言的数据处理](#title2)
+
+[R语言画图的基本概念](#title3)
+
+[R语言画图案例](#title4)
+
+[Bioconductor介绍](#title5)
+
+### R语言的基本概念<a name="title1"></a>
+
+#### R的赋值
+
+```{r,warning=FALSE}
+A <- 1
+B <- 2
+ls()
+rm(list=ls());ls()
+```
+
+#### R安装路径
+
+```{r,warning=FALSE}
+searchpaths()
+ls(pos=3) ## display functions in graphics
+ls(pattern="plot")
+```
+
+#### R的基本数据结构(向量)
+
+```{r,warning=FALSE}
+length(100)
+c("A","T","C","G")
+rep(1,10);seq(1,10,length=5);seq(1,10,by=1.2);
+```
+
+#### R的基本数据类型
+
+```{r,warning=FALSE}
+x <- c(1, 2, 3);typeof(x)
+y <- c(x, "a string");typeof(y)
+T;typeof(T)
+class(x);class(y);class(T)
+class(sum)
+a<- "atcgatg";class(a) <- "seq";a
+```
+
+#### R的特殊数据类型(因子)
+
+```{r,warning=FALSE}
+x <- factor(c("low", "low", "low", "high", "high"),levels=c("low","medium", "high"))
+x;levels(x);str(x)
+```
+
+#### R中的特殊变量
+
+```{r,warning=FALSE}
+a <- c(1,2,NA)
+is.na(a)
+na.exclude(a)
+0/0;Inf/-Inf;is.nan(Inf/-Inf)
+```
+
+#### 向量操作
+
+```{r,warning=FALSE}
+cbind(1:5, 11:15)
+rbind(1:5, 11:15)
+class(rbind(1:5, 11:15))
+```
+
+#### R语言的计算功能
+
+```{r,warning=FALSE}
+pi ## constant in R
+r <- 4
+(4 - pi)/r^2
+a <- c(1, 2, 3);
+b <- c(3, 2, 1)
+c <- c(2, 1)
+a+c
+c(1, 2, 3, 4) + c(10, 100)
+mat1 <- matrix(1:10,ncol=2,nrow=5) ## 5*2
+mat2 <- matrix(20:11,ncol=5,nrow=2) ## 2*5
+mat1%*%mat2 ## 5*5
+```
+
+#### R的函数特性
+
+```{r,warning=FALSE}
+sum(1,2,3)
+signif(0.00123456789,2)
+my.function <- function(x, a=1, b=0){ 
+  return(x*a + b)
+}
+my.function <- function(x, a=1, b=0) x*a + b
+my.function(3)
+my.function(3, 3, 100)
+my.function(3, b=100, a=3)
+```
+
+#### 提取数据内容
+
+```{r,warning=FALSE}
+x <- c(1, 2, 3)
+x[1];x[-3];x[10]
+y <- c(2,4,5,6,7,8)
+y[-c(2,4)]
+names(x) <- c('a','b','c') ## give name to the existing character
+x <- c(a=1,b=2,c=3) ## give name when creating new character
+x['a'];mat1[2:4,2]
+rownames(mat1) <- c('a','b','c','d','e')
+colnames(mat1) <- c('c1','c2')
+mat1[c('b','e'),'c1']
+```
+
+#### R语句
+```{r,warning=FALSE}
+## 判断
+"the" == paste("t", "he", sep="")
+4 %in% 1:5
+4 %in% 5:10
+## for循环
+for (i in 1:3) {
+  print(i)
+}
+vec <- 1:10
+your.number <- sample(vec, 1)
+## if语句
+if (your.number %% 2 == 0) {
+  message(sprintf("your number (%d) is even!", your.number))
+} else {
+  message(sprintf("your number (%d) is odd!", your.number))
+}
+## while循环
+while (sample(1:8, 1) != 3) {
+  print("we haven’t found three yet!")
+}
+```
+
+#### 任务4
+
+写一个函数，输入身高(单位米)和体重(千克)，输出BMI
+
+并通过判定，输出结论
+
+<18.5 偏瘦
+
+18.5~23.9 正常
+
+24~27.9 偏胖
+
+≥28 肥胖
+
+
+答案：
+
+```{r,warning=FALSE}
+get_BMI <- function(height,weight){
+  BMI <- weight/(height*height)
+  BMI <- signif(BMI,4)
+  print(sprintf('BMI为%s',BMI))
+  if(BMI<18.5) return('偏瘦')
+  if(BMI>=18.5 & BMI<24) return('正常')
+  if(BMI>=24 & BMI<28) return('偏胖')
+  if(BMI>=28) return('肥胖')
+}
+get_BMI(1.75,58)
+```
+
+
+### R语言的数据处理<a name="title2"></a>
+
+#### R中的数据结构
+
+```{r,warning=FALSE}
+x1 <- c(1,2,3,4,5,6,7,8,9,10,11,12)
+x2 <- array(c(1,2,3,4,5,6,7,8,9,10,11,12),dim=c(3,4)) ## 两维矩阵
+x3 <- array(c(1,2,3,4,5,6,7,8,9,10,11,12),dim=c(3,2,2)) ## 三维矩阵
+x3
+mat1 <- matrix(data=c(1,2,3,4,5,6,7,8,9,10,11,12),nrow=3,ncol=4) ## 两维矩阵，三行，四列
+x4 <- list(thing="hat", size=c(8.25,12.4,9.5))
+teams <- c("PHI","NYM","FLA","ATL","WSN")
+w <- c(92, 89, 94, 72, 59)
+l <- c(70, 73, 77, 90, 102)
+nleast <- data.frame(teams,w,l)
+nleast$w
+```
+
+#### 在R中读入数据
+
+```{r,warning=FALSE}
+s1 <- read.table("dataset/demo_1.txt")
+s2 <- read.delim("dataset/demo_1.txt")
+s3 <- read.delim("dataset/demo_1.txt",row.names=1)
+c1 <- read.table("dataset/demo_2.txt")
+c2 <- read.table("dataset/demo_2.txt",stringsAsFactor=F)
+```
+
+#### 数据处理基本函数
+
+```{r,warning=FALSE}
+x <- sample(1:100,size=10,replace=TRUE) ## 
+max(x);min(x);which.min(x);which.max(x);
+mean(x);median(x);var(x);sd(x);summary(x);
+length(x);rev(x);
+x;sort(x);order(x);rank(x);
+x[order(x)]; ## sort(x)
+sort(x)[rank(x)] ## x
+sum(x);prod(x);
+cumsum(x);cumprod(x)
+y <- rnorm(n=10,mean=20,sd=5)
+var(x,y)
+cor(x,y)
+```
+
+#### 多维度数据处理(比较复杂)
+
+```{r,warning=FALSE}
+f <- function(x) rpois(10, x)
+f(10)
+draws <- lapply(1:3, f) 
+draws
+sapply(draws, mean) 
+d1 <- do.call (cbind,draws)
+apply(d1,1,mean) # 多维向量
+apply(d1,2,mean)
+apply(d1,2,function(x){which(x>1)})
+```
+
+#### 提取数据子集
+
+```{r,warning=FALSE}
+c2[1:2,2:3]
+c2[which(c2$H1=="red"),]
+subset(c2,H3=="red")
+c2[which(c2[,1] %in% c2[,3]),]
+```
+
+#### 在R中输出数据
+
+```{r,warning=FALSE}
+write.table(c2,file="demo_2_out1.txt")
+write.table(c2,file="demo_2_out2.txt",quote=F,sep="\t")
+```
+
+#### 在R中的文本处理以及正则表达式应用(比较复杂)
+
+```{r,warning=FALSE}
+paste("A", 1:6, sep = "")
+paste("A", 1:6, sep = "_")
+paste(c("A","B"), 1:6, sep = "_")
+paste(1:6,collapse="_")
+a1 <- paste(1:6,collapse="_") 
+strsplit(a1,"_")
+gsub("[a-z](\\d*)[a-z]","\\1", c("as12df","sd22fa","s12d"))
+gsub("([ab])", "\\1_\\1_", "abc and ABC")
+txt <- "a test of capitalizing"
+gsub("(\\w)(\\w*)", "\\U\\1\\L\\2",txt,perl=TRUE)
+tolower("A")
+toupper("a")
+txt2 <- "useRs may fly into JFK or laGuardia"
+gsub("(\\w)(\\w*)(\\w)", "\\U\\1\\E\\2\\U\\3", txt2, perl=TRUE) #全局
+sub("(\\w)(\\w*)(\\w)", "\\U\\1\\E\\2\\U\\3", txt2, perl=TRUE) #局部
+```
+
+#### 任务6
+
+1. 读入dataset/demo_3.txt
+
+2. 检查哪些基因存在NA值，将NA值用该基因在其他样本中表达量的中位值来替代(imputation)
+
+3. 对每个基因，计算在所有样本中表达的均值，然后找出表达量最高和最低的基因，找出方差最高和最低的基因
+
+4. 对每个基因在不同condition情况下的表达量计算均值，将结果输出到文件中
+
+答案：
+
+```{r,warning=FALSE}
+mat1 <- read.delim('dataset/demo_3.txt',header=TRUE,row.names=1)
+mat2 <- t(apply(mat1,1,function(x){ ## 对每行进行操作
+  w1 <- which(is.na(x)==TRUE) ## 找出哪个元素有NA
+  m1 <- median(x,na.rm=TRUE) ## 求出去掉NA时的中位值
+  x[w1] <- m1 ## 将NA值替换为中位值
+  return(x) ## 函数输出
+}))
+m1 <- apply(mat2,1,mean) ## 对每一行求均值
+s1 <- apply(mat2,1,var) ##对每一行求方差
+rownames(mat2)[which.max(m1)]
+rownames(mat2)[which.min(m1)]
+rownames(mat2)[which.max(s1)]
+rownames(mat2)[which.min(s1)]
+##
+c1 <- colnames(mat2) ## 列名
+c2 <- gsub('(.*)\\.(.*)','\\1',c1) ## 得到condition
+tmp1 <- aggregate(t(mat2),list(c2),mean) ## c2为condition的顺序，根据condition求均值。
+tmp1
+mat3 <- t(tmp1[,-1])
+colnames(mat3) <- tmp1$Group.1
+mat3
+write.table(mat3,file='demo_3_out.txt',sep='\t',row.names=TRUE,col.names=TRUE,quote=FALSE)
+```
+
+### R语言画图的基本概念<a name="title3"></a>
+
+查看一个画图函数的案例
+
+```{r , echo=TRUE,warning=FALSE}
+example(plot);
+```
+
+一个画图案例：
+
+```{r,echo=TRUE,warning=FALSE}
+x <- -20:20/4
+y1 <- dnorm(x,mean=0,sd=1) ## dnorm给出不同取值情况下正态分布的density
+y2 <- dnorm(x,mean=0,sd=1.5)
+op <- par(no.readonly=TRUE)
+plot(y1~x, type = "p", main = "Figure1",xlab='Z-Score',ylab='Probability',cex=1.2,pch=16,col=2,cex.main=1.8,cex.lab=1.2,cex.axis=0.8)
+points(y2~x,col=3,pch=15,cex=1.2)
+lines(y1~x,col=2,lwd=2)
+lines(y2~x,col=3,lwd=1,lty=2)
+legend('topleft',c('sd=1','sd=1.5'),fill=c(2,3))
+par(op)
+```
+
+调制颜色：
+
+```{r,warning=FALSE}
+library(RColorBrewer)
+col1 <- brewer.pal(n=8,'Set1')
+## 调制透明度
+col2 <- rgb(t(col2rgb(col1)),alpha=60,maxColorValue = 255)
+plot(y1~x,col=col2[1],type='l')
+polygon(y1~x,col=col2[1],border=col2[1])
+polygon(y2~x,col=col2[2],border=col2[2])
+## 多个颜色重复
+col3 <- brewer.pal(n=8,'Paired')
+plot(y1~x,col=col3[1:2],type='h',lwd=10)
+## 调制渐变色
+col4 <- colorRampPalette(brewer.pal(n=8,'Spectral'))(length(x))
+plot(y2~x,col=col4,type='h',lwd=10)
+```
+
+从barplot开始画图
+
+```{r,warning=FALSE}
+x1 <- runif(100,0,1) ## 0-1之间随机取100个数值
+x2 <- cut(x1,breaks=seq(0,1,by=0.1)) ## 将100个数值分布在10等分的区间
+x3 <- table(x2) ## 计算每个区间的个数
+x4 <- cumsum(x3)/sum(x3) ## 计算累积分布
+## 调整画布
+par(mar=c(6,6,2,6)) ## 画布的边缘距离，四个数值为 下 左 上 右
+## 画图
+mm <- max(x3) ## 数值的最大值，确定上边界
+a <- barplot(x3,beside=TRUE,ylab='Count',col=col3[3],border=NA,axisnames = FALSE,cex.lab=1.6,cex.axis=1.2,ylim=c(0,mm))
+## 加点
+points(x4*mm~a,pch=16,col=col3[4],xpd=TRUE)
+## 加线
+lines(x4*mm~a,col=col3[4],lty=2,lwd=1.2)
+axis(side=4,at=seq(0,mm,length.out=11),labels=paste0(100*seq(0,1,length.out=11),'%'),las=1,xpd=TRUE)
+## 加文字
+text(a,-mm/20,names(x3),srt=60,cex=1.6,xpd=TRUE,adj=1)
+mtext(side=4,'Percentage',las=0,xpd=TRUE,line = 4,cex=1.6)
+## 加图形
+s1 <- spline(x3~a,n=100) ## spline是将连续的点进行平滑处理
+s1$x <- c(par()$usr[1],s1$x,par()$usr[2])
+s1$y <- c(0,s1$y,0)
+col2alpha <- function(x,alpha=60){
+  col2 <- rgb(t(col2rgb(x)),alpha=alpha,maxColorValue = 255)
+}
+polygon(s1,xpd=TRUE,col=col2alpha(col3[4]),border=NA)
+```
+
+#### 任务8
+
+1. 读入dataset/demo_3.txt
+
+2. 画出每个样本基因表达的boxplot
+
+要求:
+
+*纵坐标需要log转换
+
+*相同condition用相同颜色
+
+*每个样本的名称需要全部列出
+
+*在图片上方标出不同condition的legend
+
+*图片保存为pdf格式
+
+答案
+
+```{r,warning=FALSE}
+mat1 <- read.delim('dataset/demo_3.txt',header=TRUE,row.names=1)
+c1 <- colnames(mat1) ## 列名
+c2 <- gsub('(.*)\\.(.*)','\\1',c1) ## 得到condition
+c3 <- unique(c2)
+col1 <- brewer.pal(n=8,'Set3')[1:length(c3)]
+names(col1) <- c3
+#pdf('figure3.pdf',width=8,height=6)
+par(mar=c(8,6,6,2))
+boxplot(mat1,log='y',names = NA,ylab=expression(paste("Gene Count ( ",log[2],')')),col=col1[c2],cex.lab=1.2,ylim=c(1,max(mat1,na.rm=TRUE)))
+text(1:length(c1),0.5,c1,xpd=TRUE,adj=1,srt=45)
+legend(1,10^5,c3,fill=col1,horiz = TRUE,xpd=TRUE,border = NA,bty='n')
+#dev.off()
+```
+
+### R语言画图案例<a name="title4"></a>
+
+#### R语言画图案例1 – 复杂构图
+
+```{r,warning=FALSE}
+## 布局
+mm <- matrix(c(rep(1,4),rep(2,4),rep(3,4),rep(4,3),rep(5,3),rep(6,3),rep(7,3)),nrow=2,byrow=T)
+mm
+nn <-  layout(mm)
+layout.show(nn)
+## 读入数据
+ori_dat <- read.delim("dataset/demo_4.txt",stringsAsFactors=F)
+## calculate NA
+na_num  <- apply(ori_dat,1,function(x){length(which(is.na(x)==T))})
+## filter NA
+ori_dat <- ori_dat[which(na_num==0),]
+## get color info
+col1 <- brewer.pal(n=8,'Set2')
+col2 <- rgb(t(col2rgb(col1)),alpha=120,maxColorValue = 255)
+cc <- ori_dat[,1];
+cc[which(cc=="A")]<-col2[1];cc[which(cc=="B")]<-col2[2];cc[which(cc=="C")]<-col2[3]
+## scatter plots
+plot(ori_dat$iNP.MSG~ori_dat$MSG,col=cc,main="MSG",
+	xlim=c(0,max(ori_dat$iNP.MSG)),ylim=c(0,max(ori_dat$iNP.MSG)),
+	xlab="Accuracy(MSG)",ylab="Accuracy(iNP.MSG)",cex.lab=1.5,cex.axis=1.5,pch=16)
+abline(a=0,b=1) ## 画对角线
+legend('bottomright',c("A","B","C"),fill=col1[1:3],cex=1)
+plot(ori_dat$iNP.Qcut~ori_dat$Qcut,col=cc,main="Qcut",
+	xlim=c(0,max(ori_dat$iNP.Qcut)),ylim=c(0,max(ori_dat$iNP.Qcut)),
+	xlab="Accuracy(Qcut)",ylab="Accuracy(iNP.Qcut)",cex.lab=1.5,cex.axis=1.5,pch=16)
+abline(a=0,b=1)
+legend('bottomright',c("A","B","C"),fill=col1[1:3],cex=1)
+plot(ori_dat$iNP.SC~ori_dat$SC,col=cc,main="SC",
+	xlim=c(0,max(ori_dat$iNP.SC)),ylim=c(0,max(ori_dat$iNP.SC)),
+	xlab="Accuracy(SC)",ylab="Accuracy(iNP.SC)",cex.lab=1.5,cex.axis=1.5,pch=16)
+abline(a=0,b=1)
+legend('bottomright',c("A","B","C"),fill=col1[1:3],cex=1)
+## barplot for "A"
+par(mar=c(6,3,3,2))
+each_mean <- apply(ori_dat[which(ori_dat[,1]=='A'),2:7],2,function(x)mean(x,na.rm=TRUE))
+nn = barplot(each_mean,main="A",names = NA)
+text(nn,-0.1,names(each_mean),srt=60,xpd=T,cex=1.3,adj=1)
+## barplot for "B"
+each_mean <- apply(ori_dat[which(ori_dat[,1]=='B'),2:7],2,function(x)mean(x,na.rm=TRUE))
+nn = barplot(each_mean,main="B",names = NA)
+text(nn,-0.1,names(each_mean),srt=60,xpd=T,cex=1.3,adj=1)
+## barplot for "C"
+each_mean <- apply(ori_dat[which(ori_dat[,1]=='C'),2:7],2,function(x)mean(x,na.rm=TRUE))
+nn = barplot(each_mean,main="C",names = NA)
+text(nn,-0.1,names(each_mean),srt=60,xpd=T,cex=1.3,adj=1)
+## boxplot
+diff_dat <- cbind(ori_dat$iNP.MSG-ori_dat$MSG,ori_dat$iNP.Qcut-ori_dat$Qcut,ori_dat$iNP.SC-ori_dat$SC)
+diff_num <- apply(diff_dat,2,function(x){
+	x[which(x>0)]
+})
+names(diff_num) <- c("MSG","Qcut","SC")
+boxplot(diff_num,cex.lab=1.5)
+```
+
+#### R语言画图案例2 – 热图
+
+```{r,warning=FALSE}
+load('dataset/sample_GEO.RData')
+heatmap(sample_exp,labRow=NA)
+heatmap(sample_exp,col=colorRampPalette(c('red','white','blue'))(100),scale='row',labRow=NA)
+uni_sample_group <- unique(sample_group)
+col1 <- brewer.pal(8,'Dark2')[1:length(uni_sample_group)]
+names(col1) <- uni_sample_group
+cc <- col1[sample_group]
+heatmap(sample_exp,col=colorRampPalette(c('red','white','blue'))(100),scale='row',labRow=NA,ColSideColors = cc)
+cc1 <- as.data.frame(sample_group)
+library(pheatmap);pheatmap(sample_exp,scale='row',show_rownames=FALSE,annotation_col=cc1)
+```
+
+
+#### R语言画图案例3 – KEGG图
+
+```{r,echo=FALSE,warning=FALSE}
+library(pathview)
+dat1 <- read.delim('dataset/demo_7.txt',header=TRUE,stringsAsFactors = FALSE)
+d <- dat1$logFC; names(d) <- dat1[,1]
+mm <- 10
+pv.out <- pathview(gene.data = d, pathway.id = "04350",species = "hsa", out.suffix = 'demo7_out_1', 
+                  kegg.native = T,gene.annotpkg="org.Hs.eg.db",low = list(gene = "blue", cpd = "blue"),
+                 limit = list(gene = mm, cpd = 1),bins = list(gene = 20, cpd= 10))
+pv.out <- pathview(gene.data = d, pathway.id = "04950",species = "hsa", out.suffix = 'demo7_out_2', 
+                  kegg.native = T,gene.annotpkg="org.Hs.eg.db",low = list(gene = "blue", cpd = "blue"),
+                 limit = list(gene = mm, cpd = 1),bins = list(gene = 20, cpd= 10))
+```
+
+#### R语言画图案例4 – 染色体分布图
+
+```{r,warning=FALSE}
+library(quantsmooth)
+library(RColorBrewer)
+d2 <- read.delim('dataset/demo_8.txt',stringsAsFactors = FALSE,header=TRUE)
+r1 <- d2[which(d2[,4]=='DUP'),] ## 取出dup的行
+r2 <- d2[which(d2[,4]=='DEL'),] ## 取出del的行
+# prepareGenomePlot example
+chrom.n=22;
+par(mar=c(6,6,2,6))
+# construct genomic positions
+CHR<-c(1:22,'X','Y')  # Chromosome name
+lens <- lengthChromosome(CHR, units = "hg19"); ## Chromosome length info
+names(lens) <- paste0('chr',names(lens))
+chrompos<-prepareGenomePlot(data.frame(CHR,MapInfo=lens),paintCytobands = TRUE, organism="hsa",sexChromosomes=TRUE,topspace=0.1,cex.lab=1.2,cex.axis=1.6) ## draw染色体
+##
+dwidth <- NULL ## 计算每行的长度，选取最大值作为图形的横向距离
+for (i in 1:(chrom.n%/%2)) dwidth[i] <- lens[i] + lens[chrom.n + 1 - i]
+dwidth <- c(dwidth, lens["chrX"] + lens["chrY"])
+maxdwidth <- max(dwidth) * 1.05 ## 获取横坐标最大值，因为右边的染色体是以右边的最大左边align的
+##
+left <- paste0('chr',c(1:11,'X')) ## 画在左边的染色体
+right <- paste0('chr',c(12:22,'Y')) ## 画在右边的染色体
+##### 将DUP/DEL的条带画上去（也可以画其他内容）
+cc1 <- brewer.pal(9,'Set1')[1:2] ## DUP/DEL的颜色
+############# 画DUP
+res1 <- r1[which(r1[,1] %in% left),] ## 原始数据抽提左边染色体的数据
+res2 <- r1[which(r1[,1] %in% right),] ## 原始数据抽提右边染色体的数据
+pos11 <- as.numeric(res1[,2])
+pos12 <- as.numeric(res1[,3])
+pos21 <- maxdwidth-lens[res2[,1]]+as.numeric(res2[,2]) ## 右边的染色体位置需要用最大值减去染色体长度
+pos22 <- maxdwidth-lens[res2[,1]]+as.numeric(res2[,3])
+step <- rep(0.15,length=length(CHR));names(step) <- paste0('chr',CHR) ## step用来调整同一个染色体多条带的情况（此处比较复杂）
+for(i in 1:length(pos11)){ ## polygon是用来画封闭图形，此处用来画条带
+  polygon(x=c(pos11[i],pos12[i],pos12[i],pos11[i]),
+          y=c(chrompos[res1[i,1],1]-step[res1[i,1]]-0.045,chrompos[res1[i,1],1]-step[res1[i,1]]-0.045,
+              chrompos[res1[i,1],1]-step[res1[i,1]],chrompos[res1[i,1],1]-step[res1[i,1]]),col=cc1[1],border = NA)
+  step[res1[i,1]] <- step[res1[i,1]]+0.1
+}
+for(i in 1:length(pos21)){
+  polygon(x=c(pos21[i],pos22[i],pos22[i],pos21[i]),
+          y=c(chrompos[res2[i,1],1]-step[res2[i,1]]-0.045,chrompos[res2[i,1],1]-step[res2[i,1]]-0.045,
+              chrompos[res2[i,1],1]-step[res2[i,1]],chrompos[res2[i,1],1]-step[res2[i,1]]),col=cc1[1],border = NA)
+  step[res2[i,1]] <- step[res2[i,1]]+0.1
+}
+############# 画DEL
+res1 <- r2[which(r2[,1] %in% left),]
+res2 <- r2[which(r2[,1] %in% right),]
+pos11 <- as.numeric(res1[,2])
+pos12 <- as.numeric(res1[,3])
+pos21 <- maxdwidth-lens[res2[,1]]+as.numeric(res2[,2])
+pos22 <- maxdwidth-lens[res2[,1]]+as.numeric(res2[,3])
+##
+step <- rep(0.25,length=length(CHR));names(step) <- paste0('chr',CHR)
+for(i in 1:length(pos11)){
+  polygon(x=c(pos11[i],pos12[i],pos12[i],pos11[i]),
+          y=c(chrompos[res1[i,1],1]-step[res1[i,1]]-0.045,chrompos[res1[i,1],1]-step[res1[i,1]]-0.045,
+              chrompos[res1[i,1],1]-step[res1[i,1]],chrompos[res1[i,1],1]-step[res1[i,1]]),col=cc1[2],border = NA)
+  step[res1[i,1]] <- step[res1[i,1]]+0.065
+}
+for(i in 1:length(pos21)){
+  polygon(x=c(pos21[i],pos22[i],pos22[i],pos21[i]),
+          y=c(chrompos[res2[i,1],1]-step[res2[i,1]]-0.045,chrompos[res2[i,1],1]-step[res2[i,1]]-0.045,
+              chrompos[res2[i,1],1]-step[res2[i,1]],chrompos[res2[i,1],1]-step[res2[i,1]]),col=cc1[2],border = NA)
+  step[res2[i,1]] <- step[res2[i,1]]+0.065
+}
+legend('bottomright',c('DUP','DEL'),fill=c(cc1),horiz=TRUE,cex=0.5,border=NA,bty='n') ## 给出legend
+##
+```
+
+#### R语言画图案例5 – Circos图
+
+```{r,warning=FALSE}
+## use RCircos
+library(RCircos)
+#   Load human cytoband data 
+data(UCSC.HG19.Human.CytoBandIdeogram);
+hg19.cyto <- UCSC.HG19.Human.CytoBandIdeogram;
+#   Setup RCircos core components:
+RCircos.Set.Core.Components(cyto.info=hg19.cyto, chr.exclude=NULL, 
+              tracks.inside=10, tracks.outside=0);
+RCircos.Set.Plot.Area();
+title("RCircos 2D Track Plot with Human Genome");
+#   Draw chromosome ideogram
+RCircos.Chromosome.Ideogram.Plot();
+#   Connectors in first track and gene names in the second track. 
+data(RCircos.Gene.Label.Data);
+RCircos.Gene.Connector.Plot(genomic.data=RCircos.Gene.Label.Data, 
+            track.num=1, side="in");
+RCircos.Gene.Name.Plot(gene.data=RCircos.Gene.Label.Data, name.col=4, 
+            track.num=2, side="in");
+#   Heatmap plot.  Since some gene names plotted above are longer 
+#   than one track height, we skip two tracks 
+data(RCircos.Heatmap.Data);
+RCircos.Heatmap.Plot(heatmap.data=RCircos.Heatmap.Data, data.col=6, 
+            track.num=5, side="in");
+#   Scatterplot. 
+data(RCircos.Scatter.Data);
+RCircos.Scatter.Plot(scatter.data=RCircos.Scatter.Data, data.col=5, 
+            track.num=6, side="in", by.fold=1);
+#   Line plot. 
+data(RCircos.Line.Data);
+RCircos.Line.Data[,1] <- paste0("chr", RCircos.Line.Data[,1])
+RCircos.Line.Plot(line.data=RCircos.Line.Data, data.col=5, 
+            track.num=7, side="in");
+#   Histogram plot
+data(RCircos.Histogram.Data);
+RCircos.Histogram.Plot(hist.data=RCircos.Histogram.Data, data.col=4, 
+            track.num=8, side="in");
+#   Tile plot. Note: tile plot data have chromosome locations and each
+data(RCircos.Tile.Data);
+RCircos.Tile.Plot(tile.data=RCircos.Tile.Data, track.num=9, side="in");
+#   Link lines. Link data has only paired chromosome locations in
+data(RCircos.Link.Data);
+RCircos.Link.Plot(link.data=RCircos.Link.Data, track.num=11, 
+            by.chromosome=FALSE);
+#   Add ribbon link to the center of plot area (link lines).
+data(RCircos.Ribbon.Data);
+RCircos.Ribbon.Plot(ribbon.data=RCircos.Ribbon.Data, track.num=11, 
+            by.chromosome=FALSE, twist=FALSE);
+
+####### 以下代码为不用包，仅用R的最基本画图手段，画出RCircos的图
+WES <- read.delim('dataset/demo_6.txt',stringsAsFactors = FALSE,header=FALSE)
+dis2gene <- read.delim('dataset/demo_5.txt',stringsAsFactors = FALSE)
+all_disease <- table(dis2gene[,1])
+all_disease <- sort(all_disease)
+all_gene <- unique(dis2gene[,2])
+##
+library(quantsmooth)
+library(RColorBrewer)
+##
+CHR<-c(1:22,'X','Y')  # Chromosomes
+MapInfo<-lengthChromosome(CHR,"bases")/1000
+total_len <- sum(MapInfo)
+##
+WES_use <- WES[which(WES$V4 %in% all_gene),]
+gene2pos <- lapply(all_gene,function(x){
+  x1 <- WES_use[which(WES_use$V4 %in% x),]
+  c(x1[1,1],(max(c(x1$V2,x1$V3))+min(c(x1$V2,x1$V3)))/2000,x)
+})
+gene2pos <- do.call(rbind,gene2pos)
+gene2pos <- gene2pos[order(gene2pos[,1]),]
+gene2pos[,1] <- gsub('chr','',gene2pos[,1])
+rownames(gene2pos) <- gene2pos[,3]
+############################################### 自己定义一些函数
+twopi <-  2 * pi;
+########## functions
+t2xy <- function(t,radius=1,init.angle=0) { ## pie里面的函数，借用一下，输入为中心坐标、半径和初始角度，输出为圆上的点坐标
+  t2p <- twopi * t + init.angle * pi/180
+  list(x = radius * cos(t2p), y = radius * sin(t2p))
+}
+draw_circos_each <- function(x1=1,x2=1.2,r=1,h=0.1,col='red',tag='',tag_pos=1.5,tag_adj=0.5,tag_cex=0.8,init.angle=90,use_tag=TRUE,border=NA){
+  P1 <- t2xy(seq.int(x1,x2,length.out = 100),r,init.angle=init.angle) ## 内径的坐标
+  P2 <- t2xy(seq.int(x1,x2,length.out = 100),r+h,init.angle=init.angle)  ## 外径的坐标
+  polygon(c(P1$x,rev(P2$x)), c(P1$y,rev(P2$y)), density = NA, col=col,border=border) ## 画出一段圆弧
+  P3 <- t2xy((x1+x2)/2,r+h*tag_pos,init.angle=init.angle) ## 标字的坐标
+  if(use_tag==TRUE){
+    text(P3$x,P3$y,tag,xpd=TRUE,adj=tag_adj,cex=tag_cex)  
+  }else{
+    return(P3)
+  }
+}
+draw_line <- function(line.start,line.end){ ## 给出线的起始点和终止点，画出Bezire Curve
+    numOfBCPoint <- 100
+    t <- seq(0, 1, 1/numOfBCPoint)
+    linkX <- (1 - t)^2 * line.start[1] + t^2 * line.end[1]
+    linkY <- (1 - t)^2 * line.start[2] + t^2 * line.end[2]
+    return(list(pos.x = linkX, pos.y = linkY))
+}
+#############################################
+par(mar=c(4,10,4,4))
+col1 <- colorRampPalette((brewer.pal(11,'Spectral')))(24)
+col2 <- rev(colorRampPalette((brewer.pal(10,'Paired')))(length(all_disease)))
+names(col1) <- CHR
+names(col2) <- names(all_disease)
+##
+MapInfo<-lengthChromosome(CHR,"bases")/1000 ## 染色体的长度
+x <- MapInfo
+x <- c(0, cumsum(x)/sum(x)); ## 染色体的累积长度，用来计算每个染色体的位置
+x <- x*0.7  ## 染色体的部分占圆的70%
+xw <- x[2:length(x)]-x[1:(length(x)-1)]  
+x1 <- x[1:(length(x)-1)]
+x2 <- x1+xw-0.0025 ## 每个染色体的结束部分，此处0.0025用来调节染色体之间的距离
+names(x1) <- names(x)[2:length(x)]
+names(x2) <- names(x1)
+CHR_START <- x1
+CHR_END <- x2
+## 计算每个基因的位置
+gene2pos_r <- apply(gene2pos,1,function(x){
+  CHR_START[x[1]]+as.numeric(x[2])/MapInfo[x[1]]*(CHR_END[x[1]]-CHR_START[x[1]]) 
+})
+names(gene2pos_r) <- gene2pos[,3]
+gene2pos_r <- sort(gene2pos_r)
+############### begin to draw
+xlim <- ylim <- c(-1.5, 1.5)
+plot(xlim, ylim,bty='n',xaxt='n',yaxt='n',col='white',asp=1,xlab='',ylab='')
+######## draw chromosome
+for(i in 1:length(x1)){
+  cc <- col1[i]
+  cc1 <- rgb(t(col2rgb(cc))/255,alpha=0.9)
+  draw_circos_each(x1=-CHR_START[i],x2=-CHR_END[i],r=1.3,h=0.1,col=cc1,tag=names(x1)[i],tag_pos=2,tag_adj=0,tag_cex=0.7,init.angle=90,border=1)
+}
+######## draw gene
+gene2pos_p <- t2xy(gene2pos_r,radius=1.2,init.angle=90)
+gene2pos_pp <- t2xy(gene2pos_r,radius=1.17,init.angle=90)
+for(i in 1:length(gene2pos_r)){
+  angle <- atan(-gene2pos_p$y[i]/gene2pos_p$x[i])*180/pi ## 几何计算得到角度
+  if(-gene2pos_p$x[i]>0) adj <- 0 else adj <- 1 ## 调节基因的对齐方式
+  text(-gene2pos_p$x[i],gene2pos_p$y[i],names(gene2pos_r)[i],xpd=TRUE,cex=0.18,srt=angle,adj=adj)
+  points(-gene2pos_pp$x[i],gene2pos_pp$y[i],pch=16,col=1,cex=0.12)
+}
+######## draw disease
+x <- all_disease
+x <- c(0, cumsum(x)/sum(x));
+x <- x*0.28+0.01 ## 疾病的部分占圆的28%
+xw <- x[2:length(x)]-x[1:(length(x)-1)]
+x1 <- x[1:(length(x)-1)]
+x2 <- x1+xw-0.0025
+names(x1) <- names(x)[2:length(x)]
+init.angle <- 90;
+for(i in 1:length(x1)){
+  P3 <- draw_circos_each(x1=x1[i],x2=x2[i],r=1.4,h=0.1,col=col2[i],tag=names(x1)[i],tag_pos=2,tag_adj=1,tag_cex=0.8,use_tag=FALSE)
+  P1 <- t2xy((x1[i]+x2[i])/2,r=1.5,init.angle=init.angle)
+  text(P3$x,P3$y,names(x1)[i],xpd=TRUE,adj=1,cex=0.8);segments(x0=P3$x+0.01,y0=P3$y,x1=P1$x,y1=P1$y,xpd=TRUE);
+}
+disease2pos_pp <- t2xy((x1+x2)/2,radius=1.17,init.angle=90)
+for(i in 1:length(gene2pos_r)){
+  points(disease2pos_pp$x[i],disease2pos_pp$y[i],pch=16,col=1,cex=0.2)
+}
+######## draw lines
+for(i in 1:nrow(dis2gene)){
+  pp <- draw_line(line.start=c(disease2pos_pp$x[dis2gene[i,1]],disease2pos_pp$y[dis2gene[i,1]]),line.end=c(-gene2pos_pp$x[dis2gene[i,2]],gene2pos_pp$y[dis2gene[i,2]]))
+  lines(pp$pos.x,pp$pos.y,lwd=2,xpd=TRUE,col=col2[dis2gene[i,1]])
+}
+```
+
+
+#### R语言画图案例6 – ggplot2体系
+
+```{r,warning=FALSE}
+# ggplot2 examples
+library(ggplot2) 
+
+# create factors with value labels 
+mtcars$gear <- factor(mtcars$gear,levels=c(3,4,5),
+  	labels=c("3gears","4gears","5gears")) 
+mtcars$am <- factor(mtcars$am,levels=c(0,1),
+  	labels=c("Automatic","Manual")) 
+mtcars$cyl <- factor(mtcars$cyl,levels=c(4,6,8),
+   labels=c("4cyl","6cyl","8cyl")) 
+
+# Kernel density plots for mpg
+# grouped by number of gears (indicated by color)
+qplot(mpg, data=mtcars, geom="density", fill=gear, alpha=I(.5), 
+   main="Distribution of Gas Milage", xlab="Miles Per Gallon", 
+   ylab="Density")
+
+# Scatterplot of mpg vs. hp for each combination of gears and cylinders
+# in each facet, transmittion type is represented by shape and color
+qplot(hp, mpg, data=mtcars, shape=am, color=am, 
+   facets=gear~cyl, size=I(3),
+   xlab="Horsepower", ylab="Miles per Gallon") 
+
+# Separate regressions of mpg on weight for each number of cylinders
+qplot(wt, mpg, data=mtcars, geom=c("point", "smooth"), 
+   method="lm", formula=y~x, color=cyl, 
+   main="Regression of MPG on Weight", 
+   xlab="Weight", ylab="Miles per Gallon")
+
+# Boxplots of mpg by number of gears 
+# observations (points) are overlayed and jittered
+qplot(gear, mpg, data=mtcars, geom=c("boxplot", "jitter"), 
+   fill=gear, main="Mileage by Gear Number",
+   xlab="", ylab="Miles per Gallon")
+
+```
+

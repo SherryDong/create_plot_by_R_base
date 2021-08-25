@@ -1,0 +1,17 @@
+Clinical Characteristic	Dis_gene
+DiseaseA	ABCB11
+DiseaseA	ABCB4
+DiseaseA	ABCC2
+DiseaseA	ABCC8
+DiseaseA	ACTA1
+DiseaseB	AGL
+DiseaseB	ATP7B
+DiseaseB	AVPR2
+DiseaseC	BRAF
+DiseaseC	BTK
+DiseaseC	CD40LG
+DiseaseC	CDKL5
+DiseaseC	CHD7
+DiseaseC	COL1A1
+DiseaseC	COL4A5
+DiseaseC	COL6A1
